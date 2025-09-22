@@ -1,4 +1,4 @@
-import SermonAnalyzer from '@/components/SermonAnalyzer';
+import SermonAnalyzer from '@/app/SermonAnalyzer';
 
 export const metadata = {
   title: 'Sermon Analyzer',
