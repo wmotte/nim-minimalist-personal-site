@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
         messages: [
           {
@@ -68,7 +68,42 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+
+      let errorMessage = 'Failed to analyze sermon';
+
+      switch (response.status) {
+        case 400:
+          errorMessage = 'Invalid request. Please check your sermon text and try again.';
+          break;
+        case 401:
+          errorMessage = 'API authentication failed. Please check the API key configuration.';
+          break;
+        case 429:
+          errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+          break;
+        case 500:
+          errorMessage = 'Anthropic service is temporarily unavailable. Please try again later.';
+          break;
+        case 502:
+        case 503:
+        case 504:
+          errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+          break;
+        default:
+          errorMessage = `Service error (${response.status}). Please try again later.`;
+      }
+
+      console.error('Anthropic API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
+
+      return NextResponse.json(
+        { error: errorMessage },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
@@ -77,8 +112,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ analysis });
   } catch (error) {
     console.error('Error in sermon analysis:', error);
+
+    // Check if it's a network error
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return NextResponse.json(
+        { error: 'Network error. Please check your internet connection and try again.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Failed to analyze sermon' },
+      { error: 'An unexpected error occurred. Please try again.' },
       { status: 500 }
     );
   }
