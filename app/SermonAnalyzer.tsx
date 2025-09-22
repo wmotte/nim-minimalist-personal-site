@@ -19,7 +19,7 @@ const SermonAnalyzer = () => {
     setAnalysis('');
 
     try {
-      const response = await fetch('/api/analyze-sermon', {
+      const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
